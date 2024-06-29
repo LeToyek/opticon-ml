@@ -3,7 +3,10 @@ pip
 autopep8
 
 # App
+Flask-Cors
 flask
 pandas 
 statsmodels 
 matplotlib
+scikit-learn
+tensorflow

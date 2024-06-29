@@ -1,37 +1,65 @@
-import pandas as pd
-from statsmodels.tsa.arima.model import ARIMA
 import matplotlib.pyplot as plt
+import numpy as np
+from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.models import Sequential
 
-# Example time series data (replace with your own data)
-data = {
-    'timestamp': pd.date_range('2024-01-01', periods=60, freq='T'),
-    'value': [10, 12, 15, 18, 20, 22, 25, 28, 30, 32, 35, 38, 
-              40, 42, 45, 48, 50, 52, 55, 58, 60, 62, 65, 68,
-              70, 72, 75, 78, 80, 82, 85, 88, 90, 92, 95, 98,
-              100, 102, 105, 108, 110, 112, 115, 118, 120, 122,
-              125, 128, 130, 132, 135, 138, 140, 142, 145, 148,
-              150, 152, 155, 158]
-}
-df = pd.DataFrame(data)
-df.set_index('timestamp', inplace=True)
+# Generate synthetic time series data
+np.random.seed(0)
+time_series_data = 50 + np.cumsum(np.random.randn(1000))
 
-# Fit ARIMA model
-model = ARIMA(df['value'], order=(1, 1, 1))  # Example order, you may need to tune this
-fitted_model = model.fit()
+# Function to create sequences for LSTM input
+def create_sequences(data, seq_length):
+    X, y = [], []
+    for i in range(len(data)-seq_length):
+        X.append(data[i:i+seq_length])
+        y.append(data[i+seq_length])
+    return np.array(X), np.array(y)
 
-# Forecast next 10 data points
-forecast_horizon = 10
-forecast = fitted_model.forecast(steps=forecast_horizon)
+# Define sequence length
+seq_length = 50
+
+# Create sequences
+X, y = create_sequences(time_series_data, seq_length)
+
+# Reshape X to be 3-dimensional for LSTM input [samples, timesteps, features]
+X = X.reshape(X.shape[0], seq_length, 1)
+
+# Split data into training and test sets
+train_size = int(len(X) * 0.8)
+X_train, X_test = X[:train_size], X[train_size:]
+y_train, y_test = y[:train_size], y[train_size:]
+
+# Build LSTM model
+model = Sequential()
+model.add(LSTM(50, input_shape=(seq_length, 1)))
+model.add(Dense(1))
+model.compile(optimizer='adam', loss='mse')
+
+# Train the model
+history = model.fit(X_train, y_train, epochs=50, batch_size=32, validation_split=0.2, verbose=1)
+
+# Evaluate model
+loss = model.evaluate(X_test, y_test)
+print("Test Loss:", loss)
+
+# Forecast on test data
+y_pred = model.predict(X_test)
 
 # Plotting
-plt.figure(figsize=(12, 6))
-plt.plot(df.index, df['value'], label='Actual Data')
-plt.plot(pd.date_range(df.index[-1], periods=forecast_horizon+1, freq='T')[1:], forecast, label='Forecast')
-plt.title('ARIMA Forecasting Example')
-plt.xlabel('Timestamp')
+plt.figure(figsize=(14, 7))
+
+# Plotting training data
+plt.plot(np.arange(len(X_train)), np.squeeze(X_train[:, -1]), label='Training Data', color='blue')
+
+# Plotting actual test data
+plt.plot(np.arange(len(X_train), len(X_train) + len(y_test)), y_test, label='Actual Test Data', color='green')
+
+# Plotting LSTM forecast
+plt.plot(np.arange(len(X_train), len(X_train) + len(y_test)), y_pred, label='LSTM Forecast', color='red')
+
+plt.title('LSTM Time Series Forecasting Example')
+plt.xlabel('Time')
 plt.ylabel('Value')
 plt.legend()
+plt.grid(True)
 plt.show()
-
-print("Forecasted values for the next 10 time steps:")
-print(forecast)
