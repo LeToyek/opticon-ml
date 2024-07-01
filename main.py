@@ -134,6 +134,10 @@ def predict():
     except Exception as e:
         print(f'Error: {e}')
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/test', methods=['GET'])
+def tryFunc():
+    return jsonify({'message': 'Hello, World!'})
 
 @app.route('/plot', methods=['POST'])
 def plot():
