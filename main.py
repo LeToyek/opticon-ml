@@ -51,7 +51,7 @@ def build_model(input_shape):
     return model
 
 def train_model(model, X, y):
-    model.fit(X, y, epochs=50, batch_size=1, validation_split=0.2)
+    model.fit(X, y, epochs=10, batch_size=1, validation_split=0.2)
 
 def make_predictions(model, scaled_data, scaler, features):
     SEQ_LENGTH = 3
